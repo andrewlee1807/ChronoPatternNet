@@ -12,4 +12,4 @@ features: [ 'Amount of Consumption' ]  # Features to use for training
 prediction_feature: "Amount of Consumption"  # Feature to use for prediction
 overlap: True # Preprocessing input with Overlap các chu kỳ (if True, span gap = 1)
 optimizer: "adam"
-metrics: [ 'mse', 'mae' ]
+metrics: [ 'mse', 'mae', 'MAPE']

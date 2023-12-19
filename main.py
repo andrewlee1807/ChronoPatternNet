@@ -66,7 +66,7 @@ def main():
                             use_multiprocessing=True)
     t3 = time.time()
     print("Evaluation result: ")
-    print(config['output_length'], result[1], result[2])
+    print(config['output_length'], result[1], result[2], result[3])
     print("Time training: ", t2 - t1)
     time_record = f'{os.path.join(config["output_dir"], config["dataset_name"])}_time_executing.txt'
     file = open(time_record, 'a')
@@ -75,8 +75,13 @@ def main():
 
     result_file = f'{os.path.join(config["output_dir"], config["dataset_name"])}_evaluation_result.txt'
     file = open(result_file, 'a')
-    file.write(f'{config["output_length"]},{result[1]},{result[2]}\n')
+    file.write(f'{config["output_length"]},{result[1]},{result[2]},{result[3]}\n')
     file.close()
+
+    # saving model to directory: os.path.join(config["output_dir"], config["dataset_name"])}_evaluation_result.txt
+    weight_file = f'{os.path.join(config["output_dir"], "weights")}/{config["output_length"]}/{args.model_name}'
+    model.save_weights(weight_file, overwrite=True, save_format='tf')
+
 
     if args.write_log_file:
         close_logging(config["file"], config["orig_stdout"])

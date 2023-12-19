@@ -1,5 +1,5 @@
 from statsmodels.tsa.arima.model import ARIMA
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 from sklearn.model_selection import train_test_split
 
 import argparse
@@ -66,20 +66,24 @@ if __name__ == '__main__':
     # Calculate and print metrics (MSE and MAE)
     mse_values = []
     mae_values = []
+    mape_values = []
     for predicted, actual in output_pair:
         mse = mean_squared_error(actual, predicted)
         mae = mean_absolute_error(actual, predicted)
+        mape = mean_absolute_percentage_error(actual, predicted)
         mse_values.append(mse)
         mae_values.append(mae)
-    result = (sum(mse_values) / len(mse_values), sum(mae_values) / len(mae_values))
+        mape_values.append(mape)
+    result = (sum(mse_values) / len(mse_values), sum(mae_values) / len(mae_values), sum(mape_values) / len(mape_values))
     print(f'MSE: {result[0]}')
     print(f'MAE: {result[1]}')
+    print(f'MAPE: {result[2]}')
 
     import os
 
     result_file = f'{os.path.join(args.output_dir, args.dataset_name)}_evaluation_result.txt'
     file = open(result_file, 'a')
-    file.write(f'{config["output_length"]},{result[0]},{result[1]}\n')
+    file.write(f'{config["output_length"]},{result[0]},{result[1]},{result[2]}\n')
     file.close()
 
     if args.write_log_file:
