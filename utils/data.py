@@ -71,6 +71,7 @@ class TimeSeriesGenerator:
         self.raw_data = data
         self.input_width = config['input_width']
         self.output_length = config['output_length']
+        self.period = config['period']  # span between cycles
         self.shift = shift
         self.shuffle = shuffle
         self.scaler_engine = None  # This is for the normalization of the TRAIN dataset but apply to test and valid
@@ -87,12 +88,9 @@ class TimeSeriesGenerator:
         4. Split train data into TRAIN and VALID
         5. Normalize data
         """
-        data_bk = data
-        # data_gr = [data[:2900], data[2900:7500], data[7500:]]
         self.X_train = []
         self.X_valid = []
         self.X_test = []
-        # for data in data_gr:
         X_train, X_valid, X_test = self.split_norm_data(data, config['train_ratio'], normalize_type)
         self.X_train = self.X_train + list(X_train)
         self.X_valid = self.X_valid + list(X_valid)
@@ -101,15 +99,23 @@ class TimeSeriesGenerator:
         self.X_valid = np.asarray(self.X_valid)
         self.X_test = np.asarray(self.X_test)
 
-        # (13568, X) -> [(13399, 168, X), (13399, 1, prediction_step)]
+        # (13568, 1) -> [(13399/7/24=80, 7, 24, 1), (13399/7/24, 1)] # non overlap
+        # a.k.a
+        # (num_records, num_features) -> [(sample, chrono_cycle, period, num_features), (sample, prediction_step)]
         self.data_train = self.build_tsd(self.X_train,
-                                         config["features"].index(config["prediction_feature"]))
+                                         len(config['features']),
+                                         config["features"].index(config["prediction_feature"]),
+                                         overlap=config['overlap'])
         # (1508, X) -> [(1339, 168, X), (1339, prediction_step)]
         self.data_valid = self.build_tsd(self.X_valid,
-                                         config["features"].index(config["prediction_feature"]))
+                                         len(config['features']),
+                                         config["features"].index(config["prediction_feature"]),
+                                         overlap=config['overlap'])
         if self.X_test is not None:
             self.data_test = self.build_tsd(self.X_test,
-                                            config["features"].index(config["prediction_feature"]))
+                                            len(config['features']),
+                                            config["features"].index(config["prediction_feature"]),
+                                            overlap=config['overlap'])
         else:
             self.data_test = None
 
@@ -180,54 +186,7 @@ class TimeSeriesGenerator:
             return self.scaler_engine.inverse_transform(y_predicted)
         return y_predicted
 
-    def re_arrange_sequence(self, config):
-        """Arranges the input sequence to support Model1 training"""
-        self.data_train_gen = (pattern(datapack=self.data_train[0],
-                                       kernel_size=config['kernel_size'],
-                                       gap=config['gap'],
-                                       delay_factor=config['delay_factor']),
-                               self.data_train[1])
-
-        self.data_valid_gen = (pattern(datapack=self.data_valid[0],
-                                       kernel_size=config['kernel_size'],
-                                       gap=config['gap'],
-                                       delay_factor=config['delay_factor']),
-                               self.data_valid[1])
-        if self.data_test is not None:
-            self.data_test_gen = (pattern(datapack=self.data_test[0],
-                                          kernel_size=config['kernel_size'],
-                                          gap=config['gap'],
-                                          delay_factor=config['delay_factor']),
-                                  self.data_test[1])
-        config['input_width'] = self.data_train_gen[0].shape[1]
-        # # saving data_train, data_valid, data_test as a numpy file to use in next time
-        # saving_file_pkl(f'{config["output_dir"]}/{config["dataset_name"]}_data_train.pkl', self.data_train)
-        # saving_file_pkl(f'{config["output_dir"]}/{config["dataset_name"]}_data_valid.pkl', self.data_valid)
-        # if self.data_test is not None:
-        #     saving_file_pkl(f'{config["output_dir"]}/{config["dataset_name"]}_data_test.pkl', self.data_test)
-
-    def build_tsd_test(self, data):
-        """
-        Build time series dataset ==> (VALUES_, LABELS_)
-        This function is used to build the time series dataset for training dataset, validation dataset and testing dataset
-        :param data: [Number of records, Number of features]
-        :return: [Number of records, INPUT_WIDTH, INPUT_DIMENSION], [Number of records, OUTPUT_LENGTH, OUTPUT_DIMENSION]
-        """
-        X_data, y_label = [], []
-        if self.input_width >= len(data) - self.output_length - self.input_width:
-            raise ValueError(
-                f"Cannot devide sequence with length={len(data)}. The dataset is too small to be used input_length= {self.input_width}. Please reduce your input_length"
-            )
-
-        for i in range(self.input_width, len(data) - self.output_length):
-            X_data.append(data[i - self.input_width: i])
-            y_label.append(data[i: i + self.output_length])
-
-        X_data, y_label = np.array(X_data), np.array(y_label)
-
-        return X_data, y_label
-
-    def build_tsd(self, data, feature_order):
+    def build_tsd(self, data, num_feature, feature_order, overlap=False):
         """
 Example:
 first_dim = 13568 // 168 // 7
@@ -252,14 +211,27 @@ array([[[    0,     1,     2, ...,     4,     5,     6],
             feature_order: Which feature will be predicted
         """
         X_data, y_label = [], []
+        chrono_cycle_factor = self.input_width // self.period
+
         if self.input_width >= len(data) - self.output_length - self.input_width:
             raise ValueError(
                 f"Cannot devide sequence with length={len(data)}. The dataset is too small to be used input_length= {self.input_width}. Please reduce your input_length"
             )
 
-        for i in range(self.input_width, len(data) - self.output_length):
-            X_data.append(data[i - self.input_width: i])
-            y_label.append(data[i: i + self.output_length][::, feature_order])
+        if overlap:
+            # Building the input with overlap style
+            for i in range(0, len(data) - self.output_length - self.input_width):
+                cyclical_time_frame = data[i: i + self.input_width].reshape(chrono_cycle_factor, self.period,
+                                                                            num_feature)
+                X_data.append(cyclical_time_frame)
+                y_label.append(data[i + self.input_width: i + self.input_width + self.output_length][::, feature_order])
+        else:
+            # Building the input with non-overlap style
+            for i in range(0, len(data) - self.output_length - self.input_width, self.input_width):
+                cyclical_time_frame = data[i: i + self.input_width].reshape(chrono_cycle_factor, self.period,
+                                                                            num_feature)
+                X_data.append(cyclical_time_frame)
+                y_label.append(data[i + self.input_width: i + self.input_width + self.output_length][::, feature_order])
 
         X_data, y_label = np.array(X_data), np.array(y_label)
 
