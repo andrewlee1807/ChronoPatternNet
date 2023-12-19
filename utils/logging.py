@@ -5,10 +5,12 @@ from utils.directory import create_file
 import sys
 import yaml
 import os
+
+
 # Get all arguments from command
 def arg_parse(parser):
     parser.add_argument('--dataset_name', type=str, default='cnu', help='Dataset Name: household; cnu; spain; gyeonggi')
-    parser.add_argument('--model_name', type=str, default='model1', help='Model Name: model1; model2; model3')
+    parser.add_argument('--model_name', type=str, default='Chrono', help='Model Name: Chrono, TCN, LSTM, GRU, MLP')
     parser.add_argument('--dataset_path', type=str, default='../dataset/', help='Dataset path')
     parser.add_argument('--config_path', type=str, help='Configuration file path')
     parser.add_argument('--output_length', type=int, default=1, help='Prediction Length')
