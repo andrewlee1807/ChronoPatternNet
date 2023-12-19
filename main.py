@@ -5,7 +5,7 @@ import argparse
 import os
 
 from models import get_model, build_callbacks
-from utils.data import Dataset, TimeSeriesGenerator
+from utils.data import Dataset, ChronoGenerator, TimeSeriesGenerator
 from utils.logging import arg_parse, warming_up, close_logging
 import time
 
@@ -22,10 +22,16 @@ def main():
     data = dataset.dataloader.export_the_sequence(config["features"])
 
     print("Building time series generator...")
-    tsf = TimeSeriesGenerator(data=data,
+    if "Chrono".upper() in args.model_name.upper():
+        tsf = ChronoGenerator(data=data,
                               config=config,
                               normalize_type=1,
                               shuffle=False)
+    else:
+        tsf = TimeSeriesGenerator(data=data,
+                                  config=config,
+                                  normalize_type=1,
+                                  shuffle=False)
 
     data_train = [tsf.data_train[0], tsf.data_train[1]]
     data_valid = [tsf.data_valid[0], tsf.data_valid[1]]

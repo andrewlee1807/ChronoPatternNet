@@ -54,7 +54,11 @@ def compile_model(model, config):
     # model.summary()
 
     # print model
-    input_test = Input(shape=(7, 24, 1))
+    if isinstance(model, ChronoPatternNet):
+        input_test = Input(shape=(24, 7, 1))
+    else:
+        input_test = Input(shape=(168, len(config['features'])))
+    # input_test = Input(shape=(7, 24, 1))
     # model.build(input_test)
     model.summary(input_test)
     # Build model
@@ -75,7 +79,6 @@ def initialize_model1(config):
 
 
 def initialize_tcn_model(config):
-    from tcnbased.tcn_family import TCN_Vanilla
     model = TCN_Vanilla(input_width=config['input_width'],
                         dilations=config['list_dilation'],
                         nb_filters=config['nb_filters'],
