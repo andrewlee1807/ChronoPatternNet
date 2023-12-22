@@ -36,6 +36,7 @@ def pattern(datapack: np.array, kernel_size: int, gap=7, delay_factor=1):
 
     return np.asarray(new_datapack)
 
+
 class TimeSeriesGenerator:
     """
     This class only support to prepare training (backup to TSF class)
@@ -115,6 +116,10 @@ class TimeSeriesGenerator:
         self.data_train_gen = None
         self.data_valid_gen = None
         self.data_test_gen = None
+
+        print("Training length: ", len(self.data_train[0]),
+              "Validation length:", (self.data_valid[0]),
+              "Testing length ", len(self.data_test[0]))
 
     def __split_2_set__(self, dataset, ratio):
         X_test = None  # No testing, using whole data to train
@@ -237,9 +242,10 @@ class TimeSeriesGenerator:
             feature_order: Which feature will be predicted
         """
         X_data, y_label = [], []
-        if self.input_width >= len(data) - self.output_length - self.input_width:
+        # if self.input_width >= len(data) - self.output_length - self.input_width:
+        if len(data) - self.output_length - self.input_width <= 0:
             raise ValueError(
-                f"Cannot devide sequence with length={len(data)}. The dataset is too small to be used input_length= {self.input_width}. Please reduce your input_length"
+                f"Cannot devide sequence with length={len(data)}. The dataset is too small to be used input_length= {self.input_width}. Please reduce your input_length or change your ratio training"
             )
 
         for i in range(self.input_width, len(data) - self.output_length):
@@ -249,6 +255,7 @@ class TimeSeriesGenerator:
         X_data, y_label = np.array(X_data), np.array(y_label)
 
         return X_data, y_label
+
 
 class ChronoGenerator:
     """
@@ -335,6 +342,9 @@ class ChronoGenerator:
         self.data_train_gen = None
         self.data_valid_gen = None
         self.data_test_gen = None
+        print("Training length: ", len(self.data_train[0]),
+              "Validation length:", (self.data_valid[0]),
+              "Testing length ", len(self.data_test[0]))
 
     def __split_2_set__(self, dataset, ratio):
         X_test = None  # No testing, using whole data to train
@@ -426,7 +436,8 @@ array([[[    0,     1,     2, ...,     4,     5,     6],
         X_data, y_label = [], []
         chrono_cycle_factor = self.input_width // self.period
 
-        if self.input_width >= len(data) - self.output_length - self.input_width:
+        # if self.input_width >= len(data) - self.output_length - self.input_width:
+        if len(data) - self.output_length - self.input_width <= 0:
             raise ValueError(
                 f"Cannot devide sequence with length={len(data)}. The dataset is too small to be used input_length= {self.input_width}. Please reduce your input_length"
             )
@@ -434,8 +445,9 @@ array([[[    0,     1,     2, ...,     4,     5,     6],
         if overlap:
             # Building the input with overlap style
             for i in range(0, len(data) - self.output_length - self.input_width):
-                cyclical_time_frame = data[i: i + self.input_width].reshape(chrono_cycle_factor, self.period,
-                                                                            num_feature)
+                cyclical_time_frame = data[i: i + chrono_cycle_factor * self.period].reshape(chrono_cycle_factor,
+                                                                                             self.period,
+                                                                                             num_feature)
                 X_data.append(cyclical_time_frame)
                 y_label.append(data[i + self.input_width: i + self.input_width + self.output_length][::, feature_order])
         else:

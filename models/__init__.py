@@ -55,9 +55,9 @@ def compile_model(model, config):
 
     # print model
     if isinstance(model, ChronoPatternNet):
-        input_test = Input(shape=(7, 24, 1))
+        input_test = Input(shape=(config['input_width']//config['period'], config['period'], 1))
     else:
-        input_test = Input(shape=(168, len(config['features'])))
+        input_test = Input(shape=(config['input_width'], len(config['features'])))
     # input_test = Input(shape=(7, 24, 1))
     # model.build(input_test)
     model.summary(input_test)
