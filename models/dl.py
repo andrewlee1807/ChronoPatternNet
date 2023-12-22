@@ -34,49 +34,55 @@ class ChronoPatternNet(tf.keras.Model):
         #     self.clinical_blocks.append(layers.Dropout(rate=dropout_rate))
         #     self.clinical_blocks.append(layers.MaxPool2D(pool_size=(2, 2), strides=(2, 2), name=f'MaxPool{i}'))
 
-        self.clinical_blocks.append(layers.Conv2D(filters=32,
-                                                  kernel_size=7,
-                                                  padding=padding,
-                                                  activation='relu',
-                                                  name=f'Conv0'))
+        # self.clinical_blocks.append(layers.Conv2D(filters=32,
+        #                                           kernel_size=(7, 3),
+        #                                           padding=padding,
+        #                                           activation='relu',
+        #                                           name=f'Conv0'))
+        self.clinical_blocks.append(
+            layers.SeparableConv2D(filters=32, kernel_size=7, padding='same'))
         # self.clinical_blocks.append(layers.BatchNormalization(axis=-1, name="block0_conv0_bn"))
         # self.clinical_blocks.append(layers.LayerNormalization(name="block0_conv0_ln"))
         # self.clinical_blocks.append(layers.Dropout(rate=dropout_rate))
         self.clinical_blocks.append(layers.Activation("relu", name="block0_conv0_act"))
         # self.clinical_blocks.append(layers.MaxPool2D(pool_size=(2, 2), strides=(1, 1), name=f'MaxPool0'))
-        self.clinical_blocks.append(layers.Conv2D(filters=64,
-                                                  kernel_size=5,
-                                                  padding=padding,
-                                                  activation='relu',
-                                                  name=f'Conv1'))
+        # self.clinical_blocks.append(layers.Conv2D(filters=64,
+        #                                           kernel_size=5,
+        #                                           padding=padding,
+        #                                           activation='relu',
+        #                                           name=f'Conv1'))
+        self.clinical_blocks.append(
+            layers.SeparableConv2D(filters=64, kernel_size=7, padding='same'))
         # self.clinical_blocks.append(layers.BatchNormalization(axis=-1, name="block0_conv1_bn"))
         # self.clinical_blocks.append(layers.LayerNormalization(name="block0_conv1_ln"))
         # self.clinical_blocks.append(layers.Dropout(rate=dropout_rate))
         self.clinical_blocks.append(layers.Activation("relu", name="block0_conv1_act"))
-        self.clinical_blocks.append(layers.MaxPool2D(pool_size=(2, 2), strides=(1, 1), name=f'MaxPool1'))
+        # self.clinical_blocks.append(layers.MaxPool2D(pool_size=(2, 2), strides=(1, 1), name=f'MaxPool1'))
 
-        self.residual_layer1 = layers.Conv2D(32, (1, 1), padding="same", use_bias=False)
+        # for i in range(nb_stacks):
+        self.residual_layer1 = layers.Conv2D(64, (1, 1), padding="same", use_bias=False)
         self.residual_layer1_act = layers.Activation("relu", name="residual_act1")
         # self.residual_layers.append(layers.BatchNormalization(axis=1))
         # self.residual_layers.append(layers.LayerNormalization(name="residual_ln"))
 
         self.clinical_block2 = []
-        self.clinical_block2.append(layers.Conv2D(filters=32,
+        self.clinical_block2.append(layers.Conv2D(filters=64,
                                                   kernel_size=7,
                                                   padding=padding,
-                                                  activation='relu',
                                                   name=f'block2_conv1'))
         # self.clinical_block2.append(layers.BatchNormalization(axis=1, name="block2_conv1_bn"))
-        self.clinical_block2.append(layers.LayerNormalization(name="block2_conv1_ln"))
+        # self.clinical_block2.append(layers.LayerNormalization(name="block2_conv1_ln"))
         self.clinical_block2.append(layers.Activation("relu", name="block2_conv2_act0"))
-        self.clinical_block2.append(layers.Conv2D(32,
+        self.clinical_block2.append(layers.MaxPool2D(pool_size=3, strides=2, name=f'MaxPool2'))
+        self.clinical_block2.append(layers.Conv2D(64,
                                                   7,
                                                   padding="same",
                                                   use_bias=False, name="block2_conv2"
                                                   ))
         # self.clinical_block2.append(layers.BatchNormalization(axis=1, name="block2_conv2_bn"))
-        self.clinical_block2.append(layers.LayerNormalization(name="block2_conv2_ln"))
+        # self.clinical_block2.append(layers.LayerNormalization(name="block2_conv2_ln"))
         self.clinical_block2.append(layers.Activation("relu", name="block2_conv2_act1"))
+        self.clinical_block2.append(layers.MaxPool2D(pool_size=2, strides=2, name=f'MaxPool3'))
 
         self.residual_layer2 = layers.Conv2D(32, (1, 1), padding="same", use_bias=False)
         self.residual_layer2_act = layers.Activation("relu", name="residual_act2")
@@ -84,7 +90,7 @@ class ChronoPatternNet(tf.keras.Model):
         self.exit_flow = []
         self.exit_flow.append(layers.Activation("relu", name="block2_conv2_act"))
         self.exit_flow.append(layers.Conv2D(filters=32,
-                                            kernel_size=3,
+                                            kernel_size=5,
                                             padding=padding,
                                             activation='relu',
                                             name=f'block3_conv1'))
@@ -108,13 +114,13 @@ class ChronoPatternNet(tf.keras.Model):
         # x = layers.add([x, residual])
         # # x = self.residual_layer1_act(x)
         # residual = x
-        #
-        # for clinical_block in self.clinical_block2:
-        #     x = clinical_block(x)
-        #
+
+        for clinical_block in self.clinical_block2:
+            x = clinical_block(x)
+
         # residual = self.residual_layer2(residual)
         # x = layers.add([x, residual])
-        # # x = self.residual_layer2_act(x)
+        # x = self.residual_layer2_act(x)
 
         for exit_flow in self.exit_flow:
             x = exit_flow(x)
