@@ -118,7 +118,7 @@ class TimeSeriesGenerator:
         self.data_test_gen = None
 
         print("Training length: ", len(self.data_train[0]),
-              "Validation length:", (self.data_valid[0]),
+              "Validation length:", len(self.data_valid[0]),
               "Testing length ", len(self.data_test[0]))
 
     def __split_2_set__(self, dataset, ratio):
@@ -343,7 +343,7 @@ class ChronoGenerator:
         self.data_valid_gen = None
         self.data_test_gen = None
         print("Training length: ", len(self.data_train[0]),
-              "Validation length:", (self.data_valid[0]),
+              "Validation length:", len(self.data_valid[0]),
               "Testing length ", len(self.data_test[0]))
 
     def __split_2_set__(self, dataset, ratio):
