@@ -90,14 +90,14 @@ Besides, the experiment parameters of each data set are formated in the `.sh` fi
 # Citation
 
 ```
-@inproceedings{anhle-ChronoPatternNet-2023,
+@inproceedings{anhle-ChronoPatternNet-2024,
   author    = {Le Hoang Anh, Soo Chang Lee , Yu Gwanghuyn, Kim Jin Young},
   title     = {ChronoPatternNet: Revolutionizing Electricity Consumption Forecasting with Advanced Temporal Pattern Recognition and Efficient Computational Design},
-  booktitle = {},
-  volume    = {},
-  number    = {},
-  pages     = {},
+  booktitle = {Journal of Digital Contents Society},
+  volume    = {25},
+  number    = {1},
+  pages     = {217-228},
   publisher = {{} Press},
-  year      = {2023},
+  year      = {2024},
 }
 ```
